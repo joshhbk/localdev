@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
@@ -239,6 +239,9 @@ describe("unplugin resolveId", () => {
       updatedAt: new Date(Date.now() - 30_000).toISOString(),
       watching: ["@test/exports-conditional"],
     });
+    // Backdate the file mtime so the sync staleness check sees it as old
+    const staleTime = new Date(Date.now() - 30_000);
+    await utimes(join(projectDir, ".localdev.lock"), staleTime, staleTime);
 
     const plugin = await createPlugin(projectDir);
     const result = callResolveId(plugin, "@test/exports-conditional");

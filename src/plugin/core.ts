@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { createUnplugin } from "unplugin";
 import { readConfig } from "../shared/config.js";
-import { isHeartbeatAlive } from "../shared/heartbeat.js";
+import { getHeartbeatPath } from "../shared/heartbeat.js";
 import type { LocaldevConfig, ExportCondition } from "../shared/types.js";
 import { resolveLinkedPackage } from "./resolve.js";
 
@@ -32,38 +32,47 @@ export function parseSpecifier(
   return null;
 }
 
-async function loadActiveConfig(
-  cwd: string,
-): Promise<LocaldevConfig | null> {
-  const config = await readConfig(cwd);
-  if (!config) return null;
-  const alive = await isHeartbeatAlive(cwd);
-  return alive ? config : null;
+// Sync heartbeat check: returns true if the lock file exists and was
+// modified recently. Avoids async I/O in resolveId which is called
+// per module request.
+const STALENESS_MS = 10_000;
+
+function isHeartbeatAliveSync(cwd: string): boolean {
+  try {
+    const s = statSync(getHeartbeatPath(cwd));
+    return Date.now() - s.mtimeMs < STALENESS_MS;
+  } catch {
+    return false;
+  }
 }
 
 export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
   const cwd = options?.cwd ?? process.cwd();
-  let config: LocaldevConfig | null = null;
-  const configReady = loadActiveConfig(cwd).then((c) => {
-    config = c;
-  });
+
+  // Raw config from .localdev.json (no heartbeat check). Used for Vite setup
+  // (optimizeDeps, watcher) so these are configured even if localdev starts
+  // after the dev server.
+  const rawConfigReady = readConfig(cwd);
+
+  // Cached raw config, populated in buildStart for use in sync hooks.
+  let rawConfig: LocaldevConfig | null = null;
 
   return {
     name: "localdev",
     enforce: "pre",
 
     async buildStart() {
-      await configReady;
+      rawConfig = await rawConfigReady;
     },
 
     resolveId(id) {
-      if (!config) return null;
+      if (!rawConfig || !isHeartbeatAliveSync(cwd)) return null;
 
-      const linkedNames = Object.keys(config.links);
+      const linkedNames = Object.keys(rawConfig.links);
       const parsed = parseSpecifier(id, linkedNames);
       if (!parsed) return null;
 
-      const link = config.links[parsed.packageName];
+      const link = rawConfig.links[parsed.packageName];
       const packageDir = resolve(cwd, link.path);
 
       return resolveLinkedPackage({
@@ -78,11 +87,11 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
     // the file contents for paths we resolved. Other bundlers ignore loadInclude
     // returning false and skip this entirely.
     loadInclude(id) {
-      if (!config) return false;
-      const linkedNames = Object.keys(config.links);
+      if (!rawConfig) return false;
+      const linkedNames = Object.keys(rawConfig.links);
       return linkedNames.some(
         (name) =>
-          id.startsWith(resolve(cwd, config!.links[name].path)),
+          id.startsWith(resolve(cwd, rawConfig!.links[name].path)),
       );
     },
 
@@ -91,20 +100,23 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
     },
 
     vite: {
-      // Exclude linked packages from dep pre-bundling so our resolveId runs
+      // Exclude linked packages from dep pre-bundling so our resolveId runs.
+      // Uses raw config (no heartbeat) so this works regardless of start order.
       async config() {
-        await configReady;
-        if (!config) return;
+        const raw = await rawConfigReady;
+        if (!raw) return;
         return {
           optimizeDeps: {
-            exclude: Object.keys(config.links),
+            exclude: Object.keys(raw.links),
           },
         };
       },
-      // Watch linked package dist directories so HMR picks up rebuilds
-      configureServer(server) {
-        if (!config) return;
-        for (const link of Object.values(config.links)) {
+      // Watch linked package dist directories so HMR picks up rebuilds.
+      // Uses raw config so the watcher is set up even if localdev starts later.
+      async configureServer(server) {
+        const raw = await rawConfigReady;
+        if (!raw) return;
+        for (const link of Object.values(raw.links)) {
           server.watcher.add(resolve(cwd, link.path, "dist"));
         }
       },
