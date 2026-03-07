@@ -1,7 +1,7 @@
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, rmSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { createUnplugin } from "unplugin";
-import { readConfig } from "../shared/config.js";
+import { getConfigPath, readConfig } from "../shared/config.js";
 import { getHeartbeatPath } from "../shared/heartbeat.js";
 import type { LocaldevConfig, ExportCondition } from "../shared/types.js";
 import { resolveLinkedPackage } from "./resolve.js";
@@ -115,10 +115,40 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
       // Uses raw config so the watcher is set up even if localdev starts later.
       async configureServer(server) {
         const raw = await rawConfigReady;
-        if (!raw) return;
-        for (const link of Object.values(raw.links)) {
-          server.watcher.add(resolve(cwd, link.path, "dist"));
+        if (raw) {
+          for (const link of Object.values(raw.links)) {
+            server.watcher.add(resolve(cwd, link.path, "dist"));
+          }
         }
+
+        const restartServer = async (reason: string) => {
+          try {
+            rmSync(server.config.cacheDir, { recursive: true, force: true });
+          } catch {}
+          server.config.logger.info(reason, { timestamp: true });
+          await server.restart();
+        };
+
+        // Watch .localdev.json for link/unlink changes.
+        const configPath = getConfigPath(cwd);
+        server.watcher.add(configPath);
+        for (const event of ["change", "add", "unlink"] as const) {
+          server.watcher.on(event, (path) => {
+            if (path === configPath) {
+              restartServer("localdev config changed, restarting...");
+            }
+          });
+        }
+
+        let heartbeatWasAlive = isHeartbeatAliveSync(cwd);
+        const heartbeatPoll = setInterval(() => {
+          const alive = isHeartbeatAliveSync(cwd);
+          if (alive !== heartbeatWasAlive) {
+            heartbeatWasAlive = alive;
+            restartServer("localdev session changed, restarting...");
+          }
+        }, 2000);
+        server.httpServer?.on("close", () => clearInterval(heartbeatPoll));
       },
     },
   };
