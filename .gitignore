@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.localdev.json
+.localdev.lock
+*.tsbuildinfo

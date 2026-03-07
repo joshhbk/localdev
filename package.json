@@ -1,0 +1,77 @@
+{
+  "name": "localdev",
+  "version": "0.1.0",
+  "description": "Zero-choreography local npm package development across repos",
+  "type": "module",
+  "bin": {
+    "localdev": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    },
+    "./vite": {
+      "types": "./dist/plugin/vite.d.ts",
+      "import": "./dist/plugin/vite.js",
+      "require": "./dist/plugin/vite.cjs"
+    },
+    "./webpack": {
+      "types": "./dist/plugin/webpack.d.ts",
+      "import": "./dist/plugin/webpack.js",
+      "require": "./dist/plugin/webpack.cjs"
+    },
+    "./rspack": {
+      "types": "./dist/plugin/rspack.d.ts",
+      "import": "./dist/plugin/rspack.js",
+      "require": "./dist/plugin/rspack.cjs"
+    },
+    "./esbuild": {
+      "types": "./dist/plugin/esbuild.d.ts",
+      "import": "./dist/plugin/esbuild.js",
+      "require": "./dist/plugin/esbuild.cjs"
+    },
+    "./rollup": {
+      "types": "./dist/plugin/rollup.d.ts",
+      "import": "./dist/plugin/rollup.js",
+      "require": "./dist/plugin/rollup.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "oxlint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.0",
+    "citty": "^0.1.6",
+    "execa": "^9.5.2",
+    "unplugin": "^2.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "oxlint": "^0.16.6",
+    "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  },
+  "keywords": [
+    "local-development",
+    "npm-link",
+    "bundler-plugin",
+    "vite",
+    "webpack",
+    "rspack",
+    "esbuild",
+    "rollup"
+  ],
+  "license": "MIT"
+}
