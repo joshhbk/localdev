@@ -25,3 +25,10 @@ export interface ResolveLinkedPackageOptions {
   subpath: string;
   conditions: ExportCondition[];
 }
+
+export interface HeartbeatManifest {
+  pid: number;
+  startedAt: string;
+  updatedAt: string;
+  watching: string[];
+}

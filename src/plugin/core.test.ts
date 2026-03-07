@@ -3,10 +3,14 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseSpecifier, unplugin } from "./core.js";
+import { writeHeartbeat } from "../shared/heartbeat.js";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 
-async function createTempProject(config: Record<string, unknown>) {
+async function createTempProject(
+  config: Record<string, unknown>,
+  options: { heartbeat?: boolean } = {},
+) {
   const dir = join(
     tmpdir(),
     `localdev-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -17,6 +21,16 @@ async function createTempProject(config: Record<string, unknown>) {
     JSON.stringify(config),
     "utf-8",
   );
+  if (options.heartbeat !== false) {
+    await writeHeartbeat(dir, {
+      pid: process.pid,
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      watching: Object.keys(
+        (config as { links?: Record<string, unknown> }).links ?? {},
+      ),
+    });
+  }
   return dir;
 }
 
@@ -185,6 +199,66 @@ describe("unplugin resolveId", () => {
     );
     expect(result).toBe(
       join(FIXTURES, "pkg-exports-subpath", "dist/components/Button.mjs"),
+    );
+  });
+
+  it("returns null when config exists but no heartbeat", async () => {
+    projectDir = await createTempProject(
+      {
+        links: {
+          "@test/exports-conditional": {
+            path: join(FIXTURES, "pkg-exports-conditional"),
+            dev: "echo",
+          },
+        },
+      },
+      { heartbeat: false },
+    );
+
+    const plugin = await createPlugin(projectDir);
+    const result = callResolveId(plugin, "@test/exports-conditional");
+    expect(result).toBeNull();
+  });
+
+  it("returns null when config exists but heartbeat is stale", async () => {
+    projectDir = await createTempProject(
+      {
+        links: {
+          "@test/exports-conditional": {
+            path: join(FIXTURES, "pkg-exports-conditional"),
+            dev: "echo",
+          },
+        },
+      },
+      { heartbeat: false },
+    );
+
+    await writeHeartbeat(projectDir, {
+      pid: process.pid,
+      startedAt: new Date(Date.now() - 30_000).toISOString(),
+      updatedAt: new Date(Date.now() - 30_000).toISOString(),
+      watching: ["@test/exports-conditional"],
+    });
+
+    const plugin = await createPlugin(projectDir);
+    const result = callResolveId(plugin, "@test/exports-conditional");
+    expect(result).toBeNull();
+  });
+
+  it("resolves when config and valid heartbeat both exist", async () => {
+    projectDir = await createTempProject({
+      links: {
+        "@test/exports-conditional": {
+          path: join(FIXTURES, "pkg-exports-conditional"),
+          dev: "echo",
+        },
+      },
+    });
+
+    const plugin = await createPlugin(projectDir);
+    const result = callResolveId(plugin, "@test/exports-conditional");
+    expect(result).toBe(
+      join(FIXTURES, "pkg-exports-conditional", "dist/index.mjs"),
     );
   });
 });

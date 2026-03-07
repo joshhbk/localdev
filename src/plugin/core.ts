@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { createUnplugin } from "unplugin";
 import { readConfig } from "../shared/config.js";
+import { isHeartbeatAlive } from "../shared/heartbeat.js";
 import type { LocaldevConfig, ExportCondition } from "../shared/types.js";
 import { resolveLinkedPackage } from "./resolve.js";
 
@@ -39,6 +40,10 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
 
     async buildStart() {
       config = await readConfig(cwd);
+      if (config) {
+        const alive = await isHeartbeatAlive(cwd);
+        if (!alive) config = null;
+      }
     },
 
     resolveId(id) {
