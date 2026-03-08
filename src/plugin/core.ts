@@ -1,21 +1,19 @@
-import { readFileSync, rmSync, statSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { createUnplugin } from "unplugin";
 import { getConfigPath, readConfig } from "../shared/config.js";
-import { getHeartbeatPath } from "../shared/heartbeat.js";
-import type { LocaldevConfig, ExportCondition } from "../shared/types.js";
+import { isHeartbeatFreshSync } from "../shared/heartbeat.js";
+import {
+  DEFAULT_EXPORT_CONDITIONS,
+  getPackageWatchDirs,
+} from "../shared/package-targets.js";
+import type { LocaldevConfig } from "../shared/types.js";
 import { resolveLinkedPackage } from "./resolve.js";
 
 export interface LocaldevPluginOptions {
   /** Project root directory. Defaults to process.cwd() */
   cwd?: string;
 }
-
-export const DEFAULT_CONDITIONS: ExportCondition[] = [
-  "import",
-  "module",
-  "default",
-];
 
 export function parseSpecifier(
   id: string,
@@ -30,20 +28,6 @@ export function parseSpecifier(
     }
   }
   return null;
-}
-
-// Sync heartbeat check: returns true if the lock file exists and was
-// modified recently. Avoids async I/O in resolveId which is called
-// per module request.
-const STALENESS_MS = 10_000;
-
-function isHeartbeatAliveSync(cwd: string): boolean {
-  try {
-    const s = statSync(getHeartbeatPath(cwd));
-    return Date.now() - s.mtimeMs < STALENESS_MS;
-  } catch {
-    return false;
-  }
 }
 
 export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
@@ -71,7 +55,9 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
     },
 
     resolveId(id) {
-      if (!rawConfig || !isHeartbeatAliveSync(cwd)) return null;
+      // Resolve hooks stay sync, so the plugin uses freshness-only mtime checks
+      // here rather than the canonical async heartbeat status helper.
+      if (!rawConfig || !isHeartbeatFreshSync(cwd)) return null;
 
       const linkedNames = Object.keys(rawConfig.links);
       const parsed = parseSpecifier(id, linkedNames);
@@ -83,7 +69,7 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
       return resolveLinkedPackage({
         packageDir,
         subpath: parsed.subpath,
-        conditions: DEFAULT_CONDITIONS,
+        conditions: DEFAULT_EXPORT_CONDITIONS,
       });
     },
 
@@ -122,7 +108,13 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
         const raw = await rawConfigReady;
         if (raw) {
           for (const link of Object.values(raw.links)) {
-            server.watcher.add(resolve(cwd, link.path, "dist"));
+            const packageDir = resolve(cwd, link.path);
+            for (const watchDir of getPackageWatchDirs(
+              packageDir,
+              DEFAULT_EXPORT_CONDITIONS,
+            )) {
+              server.watcher.add(resolve(packageDir, watchDir));
+            }
           }
         }
 
@@ -150,9 +142,9 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
           });
         }
 
-        let heartbeatWasAlive = isHeartbeatAliveSync(cwd);
+        let heartbeatWasAlive = isHeartbeatFreshSync(cwd);
         const heartbeatPoll = setInterval(() => {
-          const alive = isHeartbeatAliveSync(cwd);
+          const alive = isHeartbeatFreshSync(cwd);
           if (alive !== heartbeatWasAlive) {
             heartbeatWasAlive = alive;
             restartServer("localdev session changed, restarting...");

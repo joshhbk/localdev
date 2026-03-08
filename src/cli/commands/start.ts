@@ -4,8 +4,7 @@ import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { readConfig } from "../../shared/config.js";
 import {
-  isHeartbeatAlive,
-  readHeartbeat,
+  getHeartbeatStatus,
   removeHeartbeat,
   writeHeartbeat,
 } from "../../shared/heartbeat.js";
@@ -51,16 +50,22 @@ export const startCommand = defineCommand({
     }
 
     // 3. Check for existing heartbeat
-    const existing = await readHeartbeat(cwd);
-    if (existing) {
-      const alive = await isHeartbeatAlive(cwd);
-      if (alive) {
+    const heartbeatStatus = await getHeartbeatStatus(cwd);
+    if (heartbeatStatus.state === "active") {
+      const existing = heartbeatStatus.manifest;
+      if (existing) {
         p.log.error(
           `Another localdev session is already running (PID ${existing.pid}).`,
         );
         p.outro("Stop it first or remove .localdev.lock.");
         process.exit(1);
       }
+    }
+
+    if (
+      heartbeatStatus.state === "stale" ||
+      heartbeatStatus.state === "dead"
+    ) {
       p.log.warn("Cleaning up stale .localdev.lock from a previous session.");
       await removeHeartbeat(cwd);
     }

@@ -2,10 +2,7 @@ import { access } from "node:fs/promises";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { readConfig } from "../../shared/config.js";
-import {
-  readHeartbeat,
-  isHeartbeatAlive,
-} from "../../shared/heartbeat.js";
+import { getHeartbeatStatus } from "../../shared/heartbeat.js";
 
 export function formatUptime(startedAt: string, now: Date = new Date()): string {
   const totalSeconds = Math.floor(
@@ -32,13 +29,12 @@ export const statusCommand = defineCommand({
     p.intro("localdev status");
 
     // Session state
-    const alive = await isHeartbeatAlive(cwd);
-    if (alive) {
-      const heartbeat = await readHeartbeat(cwd);
-      if (heartbeat) {
-        const uptime = formatUptime(heartbeat.startedAt);
-        p.log.step(`Session: running (PID ${heartbeat.pid}, up ${uptime})`);
-      }
+    const heartbeatStatus = await getHeartbeatStatus(cwd);
+    if (heartbeatStatus.state === "active") {
+      const uptime = formatUptime(heartbeatStatus.manifest.startedAt);
+      p.log.step(
+        `Session: running (PID ${heartbeatStatus.manifest.pid}, up ${uptime})`,
+      );
     } else {
       p.log.step("Session: not running");
     }

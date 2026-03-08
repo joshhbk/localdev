@@ -1,10 +1,18 @@
-import { readFile, writeFile, unlink } from "node:fs/promises";
+import { statSync } from "node:fs";
+import { readFile, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseJson } from "./json.js";
 import type { HeartbeatManifest } from "./types.js";
 
 const HEARTBEAT_FILENAME = ".localdev.lock";
-const STALENESS_THRESHOLD_MS = 10_000;
+export const HEARTBEAT_STALENESS_THRESHOLD_MS = 10_000;
+
+export type HeartbeatStatus =
+  | { state: "missing"; manifest: null }
+  | { state: "invalid"; manifest: null }
+  | { state: "stale"; manifest: HeartbeatManifest }
+  | { state: "dead"; manifest: HeartbeatManifest }
+  | { state: "active"; manifest: HeartbeatManifest };
 
 function isHeartbeatManifest(value: unknown): value is HeartbeatManifest {
   if (typeof value !== "object" || value === null) return false;
@@ -53,16 +61,62 @@ function isPidAlive(pid: number): boolean {
   }
 }
 
+export async function getHeartbeatStatus(
+  projectRoot: string,
+): Promise<HeartbeatStatus> {
+  let raw: string;
+
+  try {
+    raw = await readFile(getHeartbeatPath(projectRoot), "utf-8");
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return { state: "missing", manifest: null };
+    }
+
+    return { state: "invalid", manifest: null };
+  }
+
+  const manifest = parseJson(raw, isHeartbeatManifest);
+  if (!manifest) {
+    return { state: "invalid", manifest: null };
+  }
+
+  if (!isPidAlive(manifest.pid)) {
+    return { state: "dead", manifest };
+  }
+
+  const updatedAtMs = new Date(manifest.updatedAt).getTime();
+  const age = Date.now() - updatedAtMs;
+
+  if (
+    !Number.isFinite(updatedAtMs) ||
+    age >= HEARTBEAT_STALENESS_THRESHOLD_MS
+  ) {
+    return { state: "stale", manifest };
+  }
+
+  return { state: "active", manifest };
+}
+
+export function isHeartbeatFreshSync(projectRoot: string): boolean {
+  try {
+    const stats = statSync(getHeartbeatPath(projectRoot));
+    return Date.now() - stats.mtimeMs < HEARTBEAT_STALENESS_THRESHOLD_MS;
+  } catch {
+    return false;
+  }
+}
+
 export async function isHeartbeatAlive(
   projectRoot: string,
 ): Promise<boolean> {
-  const manifest = await readHeartbeat(projectRoot);
-  if (!manifest) return false;
-
-  if (!isPidAlive(manifest.pid)) return false;
-
-  const age = Date.now() - new Date(manifest.updatedAt).getTime();
-  return age < STALENESS_THRESHOLD_MS;
+  const status = await getHeartbeatStatus(projectRoot);
+  return status.state === "active";
 }
 
 export async function removeHeartbeat(

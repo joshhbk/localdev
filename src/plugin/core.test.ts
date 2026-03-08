@@ -264,4 +264,71 @@ describe("unplugin resolveId", () => {
       join(FIXTURES, "pkg-exports-conditional", "dist/index.mjs"),
     );
   });
+
+  it("watches derived output roots in vite configureServer", async () => {
+    projectDir = await createTempProject({
+      links: {
+        "@test/multi-root": {
+          path: "linked",
+          dev: "echo",
+        },
+      },
+    });
+
+    await mkdir(join(projectDir, "linked"), { recursive: true });
+    await writeFile(
+      join(projectDir, "linked", "package.json"),
+      JSON.stringify({
+        name: "@test/multi-root",
+        exports: {
+          ".": { import: "./build/index.js" },
+          "./theme": { import: "./dist/theme.js" },
+          "./components/*": { import: "./dist/components/*.js" },
+        },
+      }),
+      "utf-8",
+    );
+
+    const plugin = await createPlugin(projectDir);
+    const watched: string[] = [];
+    let onClose: (() => void) | undefined;
+
+    if (typeof plugin.configureServer !== "function") {
+      throw new Error("Expected vite configureServer hook");
+    }
+
+    await plugin.configureServer.call(
+      // @ts-expect-error - test stub for Vite plugin context
+      {},
+      {
+        watcher: {
+          add(path: string) {
+            watched.push(path);
+          },
+          on() {},
+        },
+        config: {
+          cacheDir: join(projectDir, ".vite"),
+          logger: { info() {} },
+        },
+        async restart() {},
+        httpServer: {
+          on(event: string, callback: () => void) {
+            if (event === "close") onClose = callback;
+          },
+        },
+      },
+    );
+
+    onClose?.();
+
+    expect(watched).toEqual(
+      expect.arrayContaining([
+        join(projectDir, "linked", "build"),
+        join(projectDir, "linked", "dist"),
+        join(projectDir, "linked", "dist/components"),
+        join(projectDir, ".localdev.json"),
+      ]),
+    );
+  });
 });
