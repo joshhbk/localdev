@@ -59,7 +59,7 @@ describe("killAllWatchers", () => {
   it("terminates running processes", { timeout: 15_000 }, async () => {
     const watcher = spawnWatcher(
       "test-pkg",
-      'node -e "setTimeout(() => {}, 60000)"',
+      'exec node -e "setTimeout(() => {}, 60000)"',
       {
         cwd: process.cwd(),
         onStdout: () => {},
