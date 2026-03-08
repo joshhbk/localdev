@@ -2,7 +2,7 @@ import { defineConfig } from "vitepress";
 
 export default defineConfig({
   title: "localdev",
-  description: "Local npm package development without the ceremony",
+  description: "Local npm package development across repos",
   base: "/localdev/",
   head: [
     [
@@ -23,7 +23,7 @@ export default defineConfig({
           { text: "Getting Started", link: "/guide/getting-started" },
           { text: "CLI", link: "/guide/cli" },
           { text: "Config", link: "/guide/config" },
-          { text: "Under the Hood", link: "/guide/how-it-works" },
+          { text: "How It Works", link: "/guide/how-it-works" },
         ],
       },
     ],

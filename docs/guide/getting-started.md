@@ -57,7 +57,7 @@ export default {
 
 :::
 
-Vite gets the deepest integration (config watching, cache clearing, HMR). The other adapters handle resolution but don't yet hook into their bundler's dev lifecycle.
+The Vite adapter has the deepest integration — it watches for config changes, clears the module cache, and adds linked package directories to the file watcher for HMR. The other adapters handle resolution but don't yet hook into their bundler's dev lifecycle.
 
 ## Link a package
 
@@ -65,9 +65,9 @@ Vite gets the deepest integration (config watching, cache clearing, HMR). The ot
 npx localdev link
 ```
 
-You'll pick a dependency from your `package.json`, point it at a local directory, and choose a dev command. localdev auto-discovers matching packages in sibling and nearby directories so you usually don't have to type a path.
+This walks you through picking a dependency from your `package.json`, pointing it at a local directory, and choosing a dev command. localdev looks for matching packages in sibling and nearby directories, so you usually won't need to type a path manually.
 
-This writes a `.localdev.json` in your project root. Add it and `.localdev.lock` to `.gitignore`.
+The result is a `.localdev.json` file in your project root. Add it and `.localdev.lock` to your `.gitignore`.
 
 ## Start
 
@@ -75,6 +75,6 @@ This writes a `.localdev.json` in your project root. Add it and `.localdev.lock`
 npx localdev start
 ```
 
-Spawns the dev command for each linked package. Your bundler now resolves those packages from their local directories instead of `node_modules`.
+This spawns the dev command for each linked package. While it's running, the bundler plugin resolves those packages from their local directories instead of `node_modules`.
 
-`Ctrl+C` to stop. The heartbeat file is cleaned up and the plugin goes back to being a no-op.
+`Ctrl+C` to stop. The heartbeat file is cleaned up and the plugin goes back to normal behavior.
