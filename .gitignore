@@ -3,3 +3,5 @@ dist/
 .localdev.json
 .localdev.lock
 *.tsbuildinfo
+docs/.vitepress/dist/
+docs/.vitepress/cache/
