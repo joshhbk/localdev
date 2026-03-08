@@ -57,12 +57,16 @@ describe("spawnWatcher", () => {
 
 describe("killAllWatchers", () => {
   it("terminates running processes", { timeout: 15_000 }, async () => {
-    const watcher = spawnWatcher("test-pkg", "sleep 60", {
-      cwd: process.cwd(),
-      onStdout: () => {},
-      onStderr: () => {},
-      onExit: () => {},
-    });
+    const watcher = spawnWatcher(
+      "test-pkg",
+      'node -e "setTimeout(() => {}, 60000)"',
+      {
+        cwd: process.cwd(),
+        onStdout: () => {},
+        onStderr: () => {},
+        onExit: () => {},
+      },
+    );
 
     expect(watcher.exited).toBe(false);
     await killAllWatchers([watcher]);
