@@ -1,106 +1,13 @@
-import { readFile, readdir, stat } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { readConfig, writeConfig } from "../../shared/config.js";
-import type { LocaldevConfig } from "../../shared/types.js";
-
-interface PackageJson {
-  name?: string;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  scripts?: Record<string, string>;
-}
-
-async function readPackageJson(dir: string): Promise<PackageJson | null> {
-  try {
-    const raw = await readFile(join(dir, "package.json"), "utf-8");
-    return JSON.parse(raw) as PackageJson;
-  } catch {
-    return null;
-  }
-}
-
-export async function readConsumerDeps(cwd: string): Promise<string[]> {
-  const pkg = await readPackageJson(cwd);
-  if (!pkg) return [];
-  const deps = {
-    ...pkg.dependencies,
-    ...pkg.devDependencies,
-  };
-  return Object.keys(deps).sort();
-}
-
-export async function discoverLocalPackage(
-  name: string,
-  cwd: string,
-): Promise<string[]> {
-  const matches: string[] = [];
-  const parentDir = resolve(cwd, "..");
-  const grandparentDir = resolve(cwd, "../..");
-
-  const searchDirs = [parentDir, grandparentDir];
-
-  for (const searchDir of searchDirs) {
-    let entries: string[];
-    try {
-      entries = await readdir(searchDir);
-    } catch {
-      continue;
-    }
-
-    for (const entry of entries) {
-      const candidate = join(searchDir, entry);
-
-      // Skip the consumer directory itself
-      if (resolve(candidate) === resolve(cwd)) continue;
-
-      try {
-        const s = await stat(candidate);
-        if (!s.isDirectory()) continue;
-      } catch {
-        continue;
-      }
-
-      const pkg = await readPackageJson(candidate);
-      if (pkg?.name === name && !matches.includes(candidate)) {
-        matches.push(candidate);
-        continue;
-      }
-
-      // Check one level deeper (handles packages/ui-kit, libs/core, etc.)
-      let subEntries: string[];
-      try {
-        subEntries = await readdir(candidate);
-      } catch {
-        continue;
-      }
-      for (const subEntry of subEntries) {
-        const subCandidate = join(candidate, subEntry);
-        if (resolve(subCandidate) === resolve(cwd)) continue;
-        try {
-          const ss = await stat(subCandidate);
-          if (!ss.isDirectory()) continue;
-        } catch {
-          continue;
-        }
-        const subPkg = await readPackageJson(subCandidate);
-        if (subPkg?.name === name && !matches.includes(subCandidate)) {
-          matches.push(subCandidate);
-        }
-      }
-    }
-  }
-
-  return matches;
-}
-
-export async function readPackageScripts(
-  packageDir: string,
-): Promise<Record<string, string>> {
-  const pkg = await readPackageJson(packageDir);
-  return pkg?.scripts ?? {};
-}
+import {
+  discoverLocalPackage,
+  readConsumerDeps,
+  readPackageScripts,
+  validateLinkedPackage,
+} from "./link-helpers.js";
 
 function cancelGuard<T>(value: T | symbol): T {
   if (p.isCancel(value)) {
@@ -194,15 +101,18 @@ export const linkCommand = defineCommand({
     }
 
     // Validate the chosen path
-    const targetPkg = await readPackageJson(selectedPath);
-    if (!targetPkg) {
+    const targetPackage = await validateLinkedPackage(
+      selectedDep,
+      selectedPath,
+    );
+    if (!targetPackage.ok && targetPackage.reason === "missing-package-json") {
       p.log.error(`No package.json found at ${selectedPath}`);
       p.outro("Cannot link.");
       process.exit(1);
     }
-    if (targetPkg.name !== selectedDep) {
+    if (!targetPackage.ok) {
       p.log.error(
-        `package.json at ${selectedPath} has name "${targetPkg.name}", expected "${selectedDep}".`,
+        `package.json at ${selectedPath} has name "${targetPackage.actualName}", expected "${selectedDep}".`,
       );
       p.outro("Cannot link.");
       process.exit(1);
@@ -271,11 +181,17 @@ export const linkCommand = defineCommand({
       process.exit(0);
     }
 
-    const config: LocaldevConfig = existingConfig ?? { links: {} };
     const linkEntry = { path: relativePath, dev: devCommand };
-    config.links[selectedDep] = linkEntry;
-    config.history = config.history ?? {};
-    config.history[selectedDep] = linkEntry;
+    const config = {
+      links: {
+        ...(existingConfig?.links ?? {}),
+        [selectedDep]: linkEntry,
+      },
+      history: {
+        ...(existingConfig?.history ?? {}),
+        [selectedDep]: linkEntry,
+      },
+    };
     await writeConfig(cwd, config);
 
     p.outro(`Linked ${selectedDep} → ${relativePath}`);

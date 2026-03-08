@@ -1,19 +1,14 @@
-import { access } from "node:fs/promises";
-import { resolve } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { readConfig } from "../../shared/config.js";
-import {
-  getHeartbeatStatus,
-  removeHeartbeat,
-  writeHeartbeat,
-} from "../../shared/heartbeat.js";
+import { removeHeartbeat, writeHeartbeat } from "../../shared/heartbeat.js";
 import type { HeartbeatManifest } from "../../shared/types.js";
+import { killAllWatchers, type WatcherProcess } from "../watcher.js";
 import {
-  spawnWatcher,
-  killAllWatchers,
-  type WatcherProcess,
-} from "../watcher.js";
+  findMissingLinkedPackage,
+  getLinkedPackageSpecs,
+  getStartSessionState,
+} from "./start-helpers.js";
+import { spawnWatcher } from "../watcher.js";
 
 export const startCommand = defineCommand({
   meta: {
@@ -26,8 +21,8 @@ export const startCommand = defineCommand({
     p.intro("localdev start");
 
     // 1. Read config
-    const config = await readConfig(cwd);
-    if (!config || Object.keys(config.links).length === 0) {
+    const linkedPackages = await getLinkedPackageSpecs(cwd);
+    if (linkedPackages.length === 0) {
       p.log.error(
         "No .localdev.json found or no links configured. Run `localdev link` first.",
       );
@@ -35,72 +30,59 @@ export const startCommand = defineCommand({
       process.exit(1);
     }
 
-    const linkEntries = Object.entries(config.links);
-
     // 2. Validate all link paths exist
-    for (const [name, link] of linkEntries) {
-      const dir = resolve(cwd, link.path);
-      try {
-        await access(dir);
-      } catch {
-        p.log.error(`Package directory not found for "${name}": ${dir}`);
-        p.outro("Fix your .localdev.json and try again.");
-        process.exit(1);
-      }
+    const missingPackage = await findMissingLinkedPackage(linkedPackages);
+    if (missingPackage) {
+      p.log.error(
+        `Package directory not found for "${missingPackage.name}": ${missingPackage.packageDir}`,
+      );
+      p.outro("Fix your .localdev.json and try again.");
+      process.exit(1);
     }
 
     // 3. Check for existing heartbeat
-    const heartbeatStatus = await getHeartbeatStatus(cwd);
-    if (heartbeatStatus.state === "active") {
-      const existing = heartbeatStatus.manifest;
-      if (existing) {
-        p.log.error(
-          `Another localdev session is already running (PID ${existing.pid}).`,
-        );
-        p.outro("Stop it first or remove .localdev.lock.");
-        process.exit(1);
-      }
+    const sessionState = await getStartSessionState(cwd);
+    if (sessionState.state === "already-running") {
+      p.log.error(
+        `Another localdev session is already running (PID ${sessionState.pid}).`,
+      );
+      p.outro("Stop it first or remove .localdev.lock.");
+      process.exit(1);
     }
 
-    if (
-      heartbeatStatus.state === "stale" ||
-      heartbeatStatus.state === "dead"
-    ) {
+    if (sessionState.state === "cleanup-stale") {
       p.log.warn("Cleaning up stale .localdev.lock from a previous session.");
       await removeHeartbeat(cwd);
     }
 
     // 4. Spawn watchers
     const watchers: WatcherProcess[] = [];
-    const packageNames = linkEntries.map(([name]) => name);
-
-    for (const [name, link] of linkEntries) {
-      const packageDir = resolve(cwd, link.path);
+    for (const { name, link, packageDir } of linkedPackages) {
       p.log.step(`Starting watcher: ${name} → ${link.dev}`);
-
-      const watcher = spawnWatcher(name, link.dev, {
-        cwd: packageDir,
-        onStdout: (data) => {
-          for (const line of data.trimEnd().split("\n")) {
-            p.log.message(`[${name}] ${line}`);
-          }
-        },
-        onStderr: (data) => {
-          for (const line of data.trimEnd().split("\n")) {
-            p.log.warn(`[${name}] ${line}`);
-          }
-        },
-        onExit: (code) => {
-          if (code !== 0) {
-            p.log.error(`[${name}] exited with code ${code}`);
-          } else {
-            p.log.message(`[${name}] exited`);
-          }
-        },
-      });
-
-      watchers.push(watcher);
+      watchers.push(
+        spawnWatcher(name, link.dev, {
+          cwd: packageDir,
+          onStdout: (data) => {
+            for (const line of data.trimEnd().split("\n")) {
+              p.log.message(`[${name}] ${line}`);
+            }
+          },
+          onStderr: (data) => {
+            for (const line of data.trimEnd().split("\n")) {
+              p.log.warn(`[${name}] ${line}`);
+            }
+          },
+          onExit: (code) => {
+            if (code !== 0) {
+              p.log.error(`[${name}] exited with code ${code}`);
+            } else {
+              p.log.message(`[${name}] exited`);
+            }
+          },
+        }),
+      );
     }
+    const packageNames = linkedPackages.map(({ name }) => name);
 
     // 5. Write initial heartbeat + refresh interval
     const startedAt = new Date().toISOString();

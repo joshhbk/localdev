@@ -3,10 +3,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  validateLinkedPackage,
   readConsumerDeps,
   discoverLocalPackage,
   readPackageScripts,
-} from "./link.js";
+} from "./link-helpers.js";
 
 describe("link helpers", () => {
   let dirs: string[] = [];
@@ -142,6 +143,43 @@ describe("link helpers", () => {
       );
       const scripts = await readPackageScripts(dir);
       expect(scripts).toEqual({});
+    });
+  });
+
+  describe("validateLinkedPackage", () => {
+    it("returns ok for matching package name", async () => {
+      const dir = await makeTempDir();
+      await writeFile(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "@acme/ui" }),
+      );
+
+      expect(await validateLinkedPackage("@acme/ui", dir)).toEqual({
+        ok: true,
+      });
+    });
+
+    it("returns actual name for mismatched package", async () => {
+      const dir = await makeTempDir();
+      await writeFile(
+        join(dir, "package.json"),
+        JSON.stringify({ name: "@acme/core" }),
+      );
+
+      expect(await validateLinkedPackage("@acme/ui", dir)).toEqual({
+        ok: false,
+        reason: "name-mismatch",
+        actualName: "@acme/core",
+      });
+    });
+
+    it("distinguishes missing package.json from name mismatch", async () => {
+      const dir = await makeTempDir();
+
+      expect(await validateLinkedPackage("@acme/ui", dir)).toEqual({
+        ok: false,
+        reason: "missing-package-json",
+      });
     });
   });
 });
