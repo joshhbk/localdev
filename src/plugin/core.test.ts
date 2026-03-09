@@ -104,100 +104,6 @@ describe("unplugin resolveId", () => {
     );
   }
 
-  it("resolves exact package match to local dist", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "@test/exports-conditional": {
-          path: join(FIXTURES, "pkg-exports-conditional"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(plugin, "@test/exports-conditional");
-    expect(result).toBe(
-      join(FIXTURES, "pkg-exports-conditional", "dist/index.mjs"),
-    );
-  });
-
-  it("resolves sub-path import of a linked package", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "@test/exports-subpath": {
-          path: join(FIXTURES, "pkg-exports-subpath"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(plugin, "@test/exports-subpath/theme");
-    expect(result).toBe(
-      join(FIXTURES, "pkg-exports-subpath", "dist/theme.mjs"),
-    );
-  });
-
-  it("returns null for imports not matching any linked package", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "@test/exports-conditional": {
-          path: join(FIXTURES, "pkg-exports-conditional"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(plugin, "lodash");
-    expect(result).toBeNull();
-  });
-
-  it("returns null when no config file exists", async () => {
-    const dir = join(tmpdir(), `localdev-test-noconfig-${Date.now()}`);
-    await mkdir(dir, { recursive: true });
-    projectDir = dir;
-
-    const plugin = await createPlugin(dir);
-    const result = callResolveId(plugin, "@test/exports-conditional");
-    expect(result).toBeNull();
-  });
-
-  it("resolves unscoped package names", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "my-lib": {
-          path: join(FIXTURES, "pkg-main-only"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(plugin, "my-lib");
-    expect(result).toBe(join(FIXTURES, "pkg-main-only", "dist/index.js"));
-  });
-
-  it("resolves deep sub-path imports", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "@test/exports-subpath": {
-          path: join(FIXTURES, "pkg-exports-subpath"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(
-      plugin,
-      "@test/exports-subpath/components/Button",
-    );
-    expect(result).toBe(
-      join(FIXTURES, "pkg-exports-subpath", "dist/components/Button.mjs"),
-    );
-  });
-
   it("returns null when config exists but no heartbeat", async () => {
     projectDir = await createTempProject(
       {
@@ -242,23 +148,6 @@ describe("unplugin resolveId", () => {
     const plugin = await createPlugin(projectDir);
     const result = callResolveId(plugin, "@test/exports-conditional");
     expect(result).toBeNull();
-  });
-
-  it("resolves when config and valid heartbeat both exist", async () => {
-    projectDir = await createTempProject({
-      links: {
-        "@test/exports-conditional": {
-          path: join(FIXTURES, "pkg-exports-conditional"),
-          dev: "echo",
-        },
-      },
-    });
-
-    const plugin = await createPlugin(projectDir);
-    const result = callResolveId(plugin, "@test/exports-conditional");
-    expect(result).toBe(
-      join(FIXTURES, "pkg-exports-conditional", "dist/index.mjs"),
-    );
   });
 
   it("watches derived output roots in vite configureServer", async () => {

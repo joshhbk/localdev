@@ -15,12 +15,12 @@ The plugin reads; the CLI writes. There's no shared runtime state between them.
 
 When the bundler encounters an import of a linked package, the plugin:
 
-1. Checks the heartbeat — is the lock file fresh and is the PID still alive?
+1. Checks the heartbeat: is the lock file fresh and is the PID still alive?
 2. Looks up the package name in `.localdev.json`
 3. Reads the package's `exports` field from its local `package.json`
 4. Resolves the import to the corresponding local file path
 
-Subpath exports are supported — `@myorg/shared/utils` resolves through the package's `exports["./utils"]` entry. The plugin uses `import`, `module`, and `default` conditions by default, matching standard ESM resolution order.
+Subpath exports are supported. `@myorg/shared/utils` resolves through the package's `exports["./utils"]` entry. The plugin uses `import`, `module`, and `default` conditions by default, matching standard ESM resolution order.
 
 ## Why the heartbeat
 

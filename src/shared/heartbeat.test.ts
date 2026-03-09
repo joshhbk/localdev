@@ -7,7 +7,6 @@ import {
   getHeartbeatPath,
   HEARTBEAT_STALENESS_THRESHOLD_MS,
   isHeartbeatFreshSync,
-  isHeartbeatAlive,
   readHeartbeat,
   removeHeartbeat,
   writeHeartbeat,
@@ -61,46 +60,6 @@ describe("heartbeat", () => {
     await writeFile(join(dir, ".localdev.lock"), "not json{{{", "utf-8");
     const result = await readHeartbeat(dir);
     expect(result).toBeNull();
-  });
-
-  it("isHeartbeatAlive returns true for current PID + fresh timestamp", async () => {
-    await makeTempDir();
-    await writeHeartbeat(dir, {
-      pid: process.pid,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      watching: ["pkg"],
-    });
-    expect(await isHeartbeatAlive(dir)).toBe(true);
-  });
-
-  it("isHeartbeatAlive returns false for dead PID", async () => {
-    await makeTempDir();
-    // PID 999999 is almost certainly not running
-    await writeHeartbeat(dir, {
-      pid: 999999,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      watching: ["pkg"],
-    });
-    expect(await isHeartbeatAlive(dir)).toBe(false);
-  });
-
-  it("isHeartbeatAlive returns false for stale timestamp", async () => {
-    await makeTempDir();
-    const stale = new Date(Date.now() - 30_000).toISOString();
-    await writeHeartbeat(dir, {
-      pid: process.pid,
-      startedAt: stale,
-      updatedAt: stale,
-      watching: ["pkg"],
-    });
-    expect(await isHeartbeatAlive(dir)).toBe(false);
-  });
-
-  it("isHeartbeatAlive returns false for missing file", async () => {
-    await makeTempDir();
-    expect(await isHeartbeatAlive(dir)).toBe(false);
   });
 
   it("getHeartbeatStatus returns missing for absent file", async () => {

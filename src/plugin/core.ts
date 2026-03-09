@@ -1,14 +1,14 @@
 import { readFileSync, rmSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { createUnplugin } from "unplugin";
 import { getConfigPath, readConfig } from "../shared/config.js";
 import { isHeartbeatFreshSync } from "../shared/heartbeat.js";
 import {
   DEFAULT_EXPORT_CONDITIONS,
   getPackageWatchDirs,
+  resolvePackageTarget,
 } from "../shared/package-targets.js";
 import type { LocaldevConfig } from "../shared/types.js";
-import { resolveLinkedPackage } from "./resolve.js";
 
 export interface LocaldevPluginOptions {
   /** Project root directory. Defaults to process.cwd() */
@@ -66,11 +66,12 @@ export const unplugin = createUnplugin((options?: LocaldevPluginOptions) => {
       const link = rawConfig.links[parsed.packageName];
       const packageDir = resolve(cwd, link.path);
 
-      return resolveLinkedPackage({
+      const target = resolvePackageTarget({
         packageDir,
         subpath: parsed.subpath,
         conditions: DEFAULT_EXPORT_CONDITIONS,
       });
+      return target ? join(packageDir, target.distPath) : null;
     },
 
     // esbuild: unplugin's esbuild adapter puts resolved paths into the plugin's

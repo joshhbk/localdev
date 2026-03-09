@@ -57,7 +57,7 @@ export default {
 
 :::
 
-The Vite adapter has the deepest integration — it watches for config changes, clears the module cache, and adds linked package directories to the file watcher for HMR. The other adapters handle resolution but don't yet hook into their bundler's dev lifecycle.
+The Vite adapter has the deepest integration. It watches for config changes, clears the module cache, and adds linked package directories to the file watcher for HMR. The other adapters handle resolution but don't yet hook into their bundler's dev lifecycle.
 
 ## Link a package
 

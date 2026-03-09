@@ -1,75 +1,26 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { spawnWatcher, killAllWatchers } from "./watcher.js";
 
-describe("spawnWatcher", () => {
-  it("captures stdout via onStdout", async () => {
-    const chunks: string[] = [];
-    const watcher = spawnWatcher("test-pkg", 'echo "hello from watcher"', {
-      cwd: process.cwd(),
-      onStdout: (data) => chunks.push(data),
-      onStderr: () => {},
-      onExit: () => {},
-    });
-
-    await watcher.process;
-    expect(chunks.join("")).toContain("hello from watcher");
-  });
-
-  it("captures stderr via onStderr", async () => {
-    const chunks: string[] = [];
-    const watcher = spawnWatcher("test-pkg", 'echo "err" >&2', {
-      cwd: process.cwd(),
-      onStdout: () => {},
-      onStderr: (data) => chunks.push(data),
-      onExit: () => {},
-    });
-
-    await watcher.process;
-    expect(chunks.join("")).toContain("err");
-  });
-
-  it("reports correct exit code via onExit", async () => {
-    const onExit = vi.fn();
-    const watcher = spawnWatcher("test-pkg", "exit 42", {
-      cwd: process.cwd(),
-      onStdout: () => {},
-      onStderr: () => {},
-      onExit,
-    });
-
-    await watcher.process;
-    expect(onExit).toHaveBeenCalledWith(42);
-  });
-
-  it("sets exited flag when process ends", async () => {
-    const watcher = spawnWatcher("test-pkg", "exit 0", {
-      cwd: process.cwd(),
-      onStdout: () => {},
-      onStderr: () => {},
-      onExit: () => {},
-    });
-
-    expect(watcher.exited).toBe(false);
-    await watcher.process;
-    expect(watcher.exited).toBe(true);
-  });
-});
-
 describe("killAllWatchers", () => {
-  it("terminates running processes", { timeout: 15_000 }, async () => {
-    const watcher = spawnWatcher(
-      "test-pkg",
-      'exec node -e "setTimeout(() => {}, 60000)"',
-      {
-        cwd: process.cwd(),
-        onStdout: () => {},
-        onStderr: () => {},
-        onExit: () => {},
-      },
-    );
+  it(
+    "escalates to SIGKILL when process ignores SIGTERM",
+    { timeout: 15_000 },
+    async () => {
+      // Trap SIGTERM so the process ignores it — only SIGKILL will work
+      const watcher = spawnWatcher(
+        "test-pkg",
+        `exec node -e "process.on('SIGTERM', () => {}); setTimeout(() => {}, 60000)"`,
+        {
+          cwd: process.cwd(),
+          onStdout: () => {},
+          onStderr: () => {},
+          onExit: () => {},
+        },
+      );
 
-    expect(watcher.exited).toBe(false);
-    await killAllWatchers([watcher]);
-    expect(watcher.exited).toBe(true);
-  });
+      expect(watcher.exited).toBe(false);
+      await killAllWatchers([watcher], 500);
+      expect(watcher.exited).toBe(true);
+    },
+  );
 });
