@@ -154,10 +154,7 @@ describe("unplugin resolveId", () => {
   it("resolves with inline links and no heartbeat", async () => {
     const plugin = await createPlugin(process.cwd(), {
       links: {
-        "@test/exports-conditional": join(
-          FIXTURES,
-          "pkg-exports-conditional",
-        ),
+        "@test/exports-conditional": join(FIXTURES, "pkg-exports-conditional"),
       },
     });
 
@@ -170,10 +167,7 @@ describe("unplugin resolveId", () => {
   it("returns null for non-linked import with inline links", async () => {
     const plugin = await createPlugin(process.cwd(), {
       links: {
-        "@test/exports-conditional": join(
-          FIXTURES,
-          "pkg-exports-conditional",
-        ),
+        "@test/exports-conditional": join(FIXTURES, "pkg-exports-conditional"),
       },
     });
 

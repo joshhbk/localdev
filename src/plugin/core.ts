@@ -22,9 +22,7 @@ export interface SamhailPluginOptions {
   links?: Record<string, string>;
 }
 
-function inlineLinksToConfig(
-  links: Record<string, string>,
-): SamhailConfig {
+function inlineLinksToConfig(links: Record<string, string>): SamhailConfig {
   const entries: Record<string, SamhailLink> = {};
   for (const [name, path] of Object.entries(links)) {
     entries[name] = { path };
@@ -68,7 +66,10 @@ function watchLinkedOutputDirs(
 ) {
   for (const link of Object.values(config.links)) {
     const packageDir = resolve(cwd, link.path);
-    for (const dir of getPackageWatchDirs(packageDir, DEFAULT_EXPORT_CONDITIONS)) {
+    for (const dir of getPackageWatchDirs(
+      packageDir,
+      DEFAULT_EXPORT_CONDITIONS,
+    )) {
       watcher.add(resolve(packageDir, dir));
     }
   }
