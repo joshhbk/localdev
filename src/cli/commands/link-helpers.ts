@@ -1,6 +1,6 @@
-import { readFile, readdir, stat } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { isJsonObject } from "../../shared/json.js";
+import { isJsonObject, readJsonFile } from "../../shared/json.js";
 
 interface PackageJson {
   name?: string;
@@ -9,15 +9,12 @@ interface PackageJson {
   scripts?: Record<string, string>;
 }
 
+function isPackageJson(value: unknown): value is PackageJson {
+  return isJsonObject(value);
+}
+
 async function readPackageJson(dir: string): Promise<PackageJson | null> {
-  try {
-    const raw = await readFile(join(dir, "package.json"), "utf-8");
-    const parsed: unknown = JSON.parse(raw);
-    if (!isJsonObject(parsed)) return null;
-    return parsed as PackageJson;
-  } catch {
-    return null;
-  }
+  return readJsonFile(join(dir, "package.json"), isPackageJson);
 }
 
 export async function readConsumerDeps(cwd: string): Promise<string[]> {

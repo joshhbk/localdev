@@ -22,11 +22,12 @@ export const linkCommand = defineLocaldevCommand({
     // Step 1 — Read consumer's package.json
     const deps = await readConsumerDeps(cwd);
     if (deps.length === 0) {
-      p.log.error(
-        "No dependencies found in package.json. Install dependencies first.",
-      );
-      p.outro("Nothing to link.");
-      process.exit(1);
+      return {
+        status: "error",
+        message:
+          "No dependencies found in package.json. Install dependencies first.",
+        detail: "Nothing to link.",
+      };
     }
 
     // Step 2 — Pick dependency
@@ -98,16 +99,18 @@ export const linkCommand = defineLocaldevCommand({
       selectedPath,
     );
     if (!targetPackage.ok && targetPackage.reason === "missing-package-json") {
-      p.log.error(`No package.json found at ${selectedPath}`);
-      p.outro("Cannot link.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: `No package.json found at ${selectedPath}`,
+        detail: "Cannot link.",
+      };
     }
     if (!targetPackage.ok) {
-      p.log.error(
-        `package.json at ${selectedPath} has name "${targetPackage.actualName}", expected "${selectedDep}".`,
-      );
-      p.outro("Cannot link.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: `package.json at ${selectedPath} has name "${targetPackage.actualName}", expected "${selectedDep}".`,
+        detail: "Cannot link.",
+      };
     }
 
     const relativePath = relative(cwd, selectedPath);
@@ -169,8 +172,7 @@ export const linkCommand = defineLocaldevCommand({
     );
 
     if (!confirmed) {
-      p.cancel("Cancelled.");
-      process.exit(0);
+      return { status: "cancelled" };
     }
 
     const linkEntry = { path: relativePath, dev: devCommand };
@@ -187,5 +189,6 @@ export const linkCommand = defineLocaldevCommand({
     await writeConfig(cwd, config);
 
     p.outro(`Linked ${selectedDep} → ${relativePath}`);
+    return { status: "ok" };
   },
 });

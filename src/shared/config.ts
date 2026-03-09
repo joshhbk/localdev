@@ -1,11 +1,10 @@
-import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseJson } from "./json.js";
+import { readJsonFile, writeJsonFile } from "./json.js";
 import type { LocaldevConfig } from "./types.js";
 
 const CONFIG_FILENAME = ".localdev.json";
 
-export function isLocaldevLink(link: unknown): boolean {
+function isLocaldevLink(link: unknown): boolean {
   return (
     typeof link === "object" &&
     link !== null &&
@@ -36,25 +35,15 @@ export function getConfigPath(projectRoot: string): string {
 export async function readConfig(
   projectRoot: string,
 ): Promise<LocaldevConfig | null> {
-  try {
-    const raw = await readFile(getConfigPath(projectRoot), "utf-8");
-    return parseJson(raw, isLocaldevConfig);
-  } catch {
-    return null;
-  }
+  return readJsonFile(getConfigPath(projectRoot), isLocaldevConfig);
 }
 
 export async function writeConfig(
   projectRoot: string,
   config: LocaldevConfig,
 ): Promise<void> {
-  const configPath = getConfigPath(projectRoot);
   try {
-    await writeFile(
-      configPath,
-      JSON.stringify(config, null, 2) + "\n",
-      "utf-8",
-    );
+    await writeJsonFile(getConfigPath(projectRoot), config);
   } catch (cause) {
     throw new Error(`Failed to write ${CONFIG_FILENAME}`, { cause });
   }

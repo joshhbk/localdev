@@ -1,18 +1,13 @@
-import { readFile, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { readConfig, writeConfig } from "../../shared/config.js";
-import { isJsonObject, parseJson } from "../../shared/json.js";
+import { isJsonObject, readJsonFile } from "../../shared/json.js";
 import { defineLocaldevCommand } from "../command.js";
 
 async function readPackageName(dir: string): Promise<string | null> {
-  try {
-    const raw = await readFile(join(dir, "package.json"), "utf-8");
-    const pkg = parseJson(raw, isJsonObject);
-    return typeof pkg?.name === "string" ? pkg.name : null;
-  } catch {
-    return null;
-  }
+  const pkg = await readJsonFile(join(dir, "package.json"), isJsonObject);
+  return typeof pkg?.name === "string" ? pkg.name : null;
 }
 
 async function validateCandidate(
@@ -52,9 +47,11 @@ export const relinkCommand = defineLocaldevCommand({
     );
 
     if (candidates.length === 0) {
-      p.log.error("No previously linked packages to restore.");
-      p.outro("Use `localdev link` to link a new package.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: "No previously linked packages to restore.",
+        detail: "Use `localdev link` to link a new package.",
+      };
     }
 
     const errors: string[] = [];
@@ -68,7 +65,7 @@ export const relinkCommand = defineLocaldevCommand({
         errors.push(error);
       } else {
         updatedConfig.links[name] = link;
-        restored.push(`${name} \u2192 ${link.path}`);
+        restored.push(`${name} → ${link.path}`);
       }
     }
 
@@ -84,12 +81,15 @@ export const relinkCommand = defineLocaldevCommand({
     }
 
     if (restored.length === 0) {
-      p.outro("Nothing relinked. Use `localdev link` to link manually.");
-      process.exit(1);
-    } else {
-      p.outro(
-        `Relinked ${restored.length} package${restored.length > 1 ? "s" : ""}`,
-      );
+      return {
+        status: "error",
+        message: "Nothing relinked. Use `localdev link` to link manually.",
+      };
     }
+
+    p.outro(
+      `Relinked ${restored.length} package${restored.length > 1 ? "s" : ""}`,
+    );
+    return { status: "ok" };
   },
 });

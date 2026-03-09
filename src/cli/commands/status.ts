@@ -48,7 +48,7 @@ export const statusCommand = defineLocaldevCommand({
 
     if (entries.length === 0) {
       p.outro("No packages linked.");
-      return;
+      return { status: "ok" };
     }
 
     for (const [name, link] of entries) {
@@ -64,5 +64,7 @@ export const statusCommand = defineLocaldevCommand({
 
     const count = entries.length;
     p.outro(`${count} package${count === 1 ? "" : "s"} linked`);
+
+    return { status: "ok" };
   },
 });

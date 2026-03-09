@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
-import { readFile, unlink, writeFile } from "node:fs/promises";
+import { readFile, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
-import { parseJson } from "./json.js";
+import { parseJson, writeJsonFile } from "./json.js";
 import type { HeartbeatManifest } from "./types.js";
 
 const HEARTBEAT_FILENAME = ".localdev.lock";
@@ -35,24 +35,9 @@ export async function writeHeartbeat(
   manifest: HeartbeatManifest,
 ): Promise<void> {
   try {
-    await writeFile(
-      getHeartbeatPath(projectRoot),
-      JSON.stringify(manifest, null, 2) + "\n",
-      "utf-8",
-    );
+    await writeJsonFile(getHeartbeatPath(projectRoot), manifest);
   } catch (cause) {
     throw new Error(`Failed to write ${HEARTBEAT_FILENAME}`, { cause });
-  }
-}
-
-export async function readHeartbeat(
-  projectRoot: string,
-): Promise<HeartbeatManifest | null> {
-  try {
-    const raw = await readFile(getHeartbeatPath(projectRoot), "utf-8");
-    return parseJson(raw, isHeartbeatManifest);
-  } catch {
-    return null;
   }
 }
 

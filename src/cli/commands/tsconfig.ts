@@ -6,13 +6,8 @@ import {
   buildPackageTargetIndex,
   DEFAULT_EXPORT_CONDITIONS,
   deriveSourcePath,
-  getExportSubpaths,
   sourcePathExists,
 } from "../../shared/package-targets.js";
-
-export function getExportKeys(pkg: Record<string, unknown>): string[] {
-  return getExportSubpaths(pkg);
-}
 
 export async function distToSrc(
   packageDir: string,
@@ -81,7 +76,7 @@ export const tsconfigCommand = defineLocaldevCommand({
 
     if (entries.length === 0) {
       p.outro("No packages linked.");
-      return;
+      return { status: "ok" };
     }
 
     const allPaths: Record<string, string[]> = {};
@@ -108,7 +103,7 @@ export const tsconfigCommand = defineLocaldevCommand({
 
     if (Object.keys(allPaths).length === 0) {
       p.outro("No path mappings could be generated.");
-      return;
+      return { status: "ok" };
     }
 
     const output = {
@@ -123,5 +118,7 @@ export const tsconfigCommand = defineLocaldevCommand({
     p.outro(
       `Generated paths for ${packageCount} package${packageCount === 1 ? "" : "s"}`,
     );
+
+    return { status: "ok" };
   },
 });

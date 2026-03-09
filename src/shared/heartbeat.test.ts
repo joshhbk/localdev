@@ -7,7 +7,6 @@ import {
   getHeartbeatPath,
   HEARTBEAT_STALENESS_THRESHOLD_MS,
   isHeartbeatFreshSync,
-  readHeartbeat,
   removeHeartbeat,
   writeHeartbeat,
 } from "./heartbeat.js";
@@ -34,32 +33,6 @@ describe("heartbeat", () => {
     expect(getHeartbeatPath("/some/project")).toBe(
       join("/some/project", ".localdev.lock"),
     );
-  });
-
-  it("write/read round-trip", async () => {
-    await makeTempDir();
-    const manifest = {
-      pid: process.pid,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      watching: ["@acme/ui", "@acme/core"],
-    };
-    await writeHeartbeat(dir, manifest);
-    const result = await readHeartbeat(dir);
-    expect(result).toEqual(manifest);
-  });
-
-  it("readHeartbeat returns null for missing file", async () => {
-    await makeTempDir();
-    const result = await readHeartbeat(dir);
-    expect(result).toBeNull();
-  });
-
-  it("readHeartbeat returns null for malformed JSON", async () => {
-    await makeTempDir();
-    await writeFile(join(dir, ".localdev.lock"), "not json{{{", "utf-8");
-    const result = await readHeartbeat(dir);
-    expect(result).toBeNull();
   });
 
   it("getHeartbeatStatus returns missing for absent file", async () => {
@@ -156,7 +129,10 @@ describe("heartbeat", () => {
       watching: ["pkg"],
     });
     await removeHeartbeat(dir);
-    expect(await readHeartbeat(dir)).toBeNull();
+    expect(await getHeartbeatStatus(dir)).toEqual({
+      state: "missing",
+      manifest: null,
+    });
   });
 
   it("removeHeartbeat is idempotent", async () => {

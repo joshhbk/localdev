@@ -2,7 +2,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { getExportKeys, distToSrc, buildPathEntries } from "./tsconfig.js";
+import { distToSrc, buildPathEntries } from "./tsconfig.js";
 
 describe("tsconfig helpers", () => {
   let dirs: string[] = [];
@@ -22,40 +22,6 @@ describe("tsconfig helpers", () => {
       await rm(dir, { recursive: true, force: true });
     }
     dirs = [];
-  });
-
-  describe("getExportKeys", () => {
-    it("returns ['.'] for string exports", () => {
-      expect(getExportKeys({ exports: "./dist/index.mjs" })).toEqual(["."]);
-    });
-
-    it("returns ['.'] for condition-keyed object", () => {
-      expect(
-        getExportKeys({
-          exports: { import: "./dist/index.mjs", require: "./dist/index.cjs" },
-        }),
-      ).toEqual(["."]);
-    });
-
-    it("returns all subpath keys for subpath-keyed object", () => {
-      expect(
-        getExportKeys({
-          exports: {
-            ".": { import: "./dist/index.mjs" },
-            "./theme": { import: "./dist/theme.mjs" },
-            "./components/*": { import: "./dist/components/*.mjs" },
-          },
-        }),
-      ).toEqual([".", "./theme", "./components/*"]);
-    });
-
-    it("returns ['.'] when no exports field", () => {
-      expect(getExportKeys({ main: "./dist/index.js" })).toEqual(["."]);
-    });
-
-    it("returns ['.'] when exports is null", () => {
-      expect(getExportKeys({ exports: null })).toEqual(["."]);
-    });
   });
 
   describe("distToSrc", () => {

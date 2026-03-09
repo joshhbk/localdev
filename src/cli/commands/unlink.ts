@@ -17,9 +17,11 @@ export const unlinkCommand = defineLocaldevCommand({
     const entries = config ? Object.entries(config.links) : [];
 
     if (entries.length === 0) {
-      p.log.error("No linked packages found.");
-      p.outro("Nothing to unlink.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: "No linked packages found.",
+        detail: "Nothing to unlink.",
+      };
     }
 
     let selectedName: string;
@@ -44,8 +46,7 @@ export const unlinkCommand = defineLocaldevCommand({
     );
 
     if (!confirmed) {
-      p.cancel("Cancelled.");
-      process.exit(0);
+      return { status: "cancelled" };
     }
 
     // Save to history before removing
@@ -60,11 +61,13 @@ export const unlinkCommand = defineLocaldevCommand({
     if (remaining === 0 && !hasHistory) {
       await unlink(getConfigPath(cwd));
       p.outro(
-        `Unlinked ${selectedName}. No packages remain \u2014 removed .localdev.json.`,
+        `Unlinked ${selectedName}. No packages remain — removed .localdev.json.`,
       );
     } else {
       await writeConfig(cwd, config!);
       p.outro(`Unlinked ${selectedName}`);
     }
+
+    return { status: "ok" };
   },
 });

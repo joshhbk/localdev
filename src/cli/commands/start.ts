@@ -26,31 +26,32 @@ export const startCommand = defineLocaldevCommand({
     // 1. Read config
     const linkedPackages = await getLinkedPackageSpecs(cwd);
     if (linkedPackages.length === 0) {
-      p.log.error(
-        "No .localdev.json found or no links configured. Run `localdev link` first.",
-      );
-      p.outro("Nothing to do.");
-      process.exit(1);
+      return {
+        status: "error",
+        message:
+          "No .localdev.json found or no links configured. Run `localdev link` first.",
+        detail: "Nothing to do.",
+      };
     }
 
     // 2. Validate all link paths exist
     const missingPackage = await findMissingLinkedPackage(linkedPackages);
     if (missingPackage) {
-      p.log.error(
-        `Package directory not found for "${missingPackage.name}": ${missingPackage.packageDir}`,
-      );
-      p.outro("Fix your .localdev.json and try again.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: `Package directory not found for "${missingPackage.name}": ${missingPackage.packageDir}`,
+        detail: "Fix your .localdev.json and try again.",
+      };
     }
 
     // 3. Check for existing heartbeat
     const sessionState = await getStartSessionState(cwd);
     if (sessionState.state === "already-running") {
-      p.log.error(
-        `Another localdev session is already running (PID ${sessionState.pid}).`,
-      );
-      p.outro("Stop it first or remove .localdev.lock.");
-      process.exit(1);
+      return {
+        status: "error",
+        message: `Another localdev session is already running (PID ${sessionState.pid}).`,
+        detail: "Stop it first or remove .localdev.lock.",
+      };
     }
 
     if (sessionState.state === "cleanup-stale") {
@@ -113,7 +114,7 @@ export const startCommand = defineLocaldevCommand({
       `Watching ${packageNames.length} package${packageNames.length === 1 ? "" : "s"}. Press Ctrl+C to stop.`,
     );
 
-    // 6. Graceful shutdown
+    // 6. Graceful shutdown (signal-based lifecycle, stays as process.exit)
     let shuttingDown = false;
     const shutdown = async () => {
       if (shuttingDown) return;
@@ -128,5 +129,8 @@ export const startCommand = defineLocaldevCommand({
 
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
+
+    // start command runs indefinitely until signal; return ok for type safety
+    return { status: "ok" };
   },
 });
