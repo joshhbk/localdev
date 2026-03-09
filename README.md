@@ -1,8 +1,6 @@
 # samhail
 
-Zero-choreography local npm package development across repos.
-
-`samhail` lets you develop npm packages locally against a consumer app without symlinks, lockfile churn, or `node_modules` mutation. It works by resolving linked packages at the bundler level and orchestrating dev watchers from the CLI.
+Develop local npm packages against a consumer app without symlinks, lockfile changes, or `node_modules` mutation. Resolves linked packages at the bundler level and orchestrates dev watchers from the CLI.
 
 ## Install
 
@@ -52,8 +50,8 @@ Press `Ctrl+C` to stop.
 
 ## CLI commands
 
-| Command             | Description                                            |
-| ------------------- | ------------------------------------------------------ |
+| Command            | Description                                            |
+| ------------------ | ------------------------------------------------------ |
 | `samhail link`     | Link a dependency to a local directory                 |
 | `samhail unlink`   | Remove a linked package                                |
 | `samhail relink`   | Restore previously linked packages from history        |

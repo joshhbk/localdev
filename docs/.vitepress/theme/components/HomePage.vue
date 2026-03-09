@@ -1,37 +1,39 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { withBase } from 'vitepress'
+import { onMounted, onUnmounted, ref } from "vue";
+import { withBase } from "vitepress";
 
-const copied = ref(false)
-let copyTimeout: ReturnType<typeof setTimeout> | null = null
+const copied = ref(false);
+let copyTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function copyCommand() {
-  navigator.clipboard.writeText('npx samhail link')
-  copied.value = true
-  if (copyTimeout) clearTimeout(copyTimeout)
-  copyTimeout = setTimeout(() => { copied.value = false }, 2000)
+  navigator.clipboard.writeText("npx samhail link");
+  copied.value = true;
+  if (copyTimeout) clearTimeout(copyTimeout);
+  copyTimeout = setTimeout(() => {
+    copied.value = false;
+  }, 2000);
 }
 
-let observer: IntersectionObserver | null = null
+let observer: IntersectionObserver | null = null;
 
 onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible')
-          observer?.unobserve(entry.target)
+          entry.target.classList.add("visible");
+          observer?.unobserve(entry.target);
         }
-      })
+      });
     },
-    { threshold: 0.1, rootMargin: '0px 0px -60px 0px' }
-  )
-  document.querySelectorAll('.reveal').forEach((el) => observer?.observe(el))
-})
+    { threshold: 0.1, rootMargin: "0px 0px -60px 0px" },
+  );
+  document.querySelectorAll(".reveal").forEach((el) => observer?.observe(el));
+});
 
 onUnmounted(() => {
-  observer?.disconnect()
-})
+  observer?.disconnect();
+});
 </script>
 
 <template>
@@ -47,14 +49,20 @@ onUnmounted(() => {
             <span class="accent">locally.</span>
           </h1>
           <p class="hero-tagline">
-            Link local npm packages to real consumer apps at the bundler level.
-            No symlinks. No monorepo. No lockfile changes.
+            Link local npm packages to consumer apps at the bundler level,
+            without symlinks, monorepos, or lockfile changes.
           </p>
           <div class="hero-actions">
-            <a :href="withBase('/guide/getting-started')" class="action-btn primary">
+            <a
+              :href="withBase('/guide/getting-started')"
+              class="action-btn primary"
+            >
               Get started
             </a>
-            <a :href="withBase('/guide/how-it-works')" class="action-btn secondary">
+            <a
+              :href="withBase('/guide/how-it-works')"
+              class="action-btn secondary"
+            >
               How it works
             </a>
           </div>
@@ -68,7 +76,9 @@ onUnmounted(() => {
               <span class="dot expand"></span>
             </div>
             <div class="window-body">
-              <pre class="window-code"><code><span class="tok-prompt">$</span> samhail start
+              <pre
+                class="window-code"
+              ><code><span class="tok-prompt">$</span> samhail start
 
   Starting watcher: <span class="tok-pkg">@depot/ui</span> → tsc --watch
   Starting watcher: <span class="tok-pkg">@depot/core</span> → bun dev
@@ -124,11 +134,11 @@ onUnmounted(() => {
         <div class="showcase-row">
           <div class="showcase-text">
             <span class="section-label peach">Configuration</span>
-            <h2>One file. Zero ceremony.</h2>
+            <h2>One config file</h2>
             <p>
               <code>samhail link</code> writes a <code>.samhail.json</code>
-              with your package mappings. The bundler plugin reads it
-              automatically — no import map, no aliases, no manual wiring.
+              with your package mappings. The bundler plugin picks it up
+              automatically.
             </p>
           </div>
           <div class="showcase-visual">
@@ -160,11 +170,10 @@ onUnmounted(() => {
         <div class="showcase-row reverse">
           <div class="showcase-text">
             <span class="section-label">Bundler plugin</span>
-            <h2>Works with your stack.</h2>
+            <h2>Bundler plugins</h2>
             <p>
-              Drop in a plugin for Vite, Webpack, Rspack, esbuild, or Rollup.
-              Each adapter is thin — the resolution logic is shared and tested
-              once.
+              Add a plugin for Vite, Webpack, Rspack, esbuild, or Rollup. Each
+              adapter is a thin wrapper around shared resolution logic.
             </p>
           </div>
           <div class="showcase-visual">
@@ -176,7 +185,9 @@ onUnmounted(() => {
                 <span class="window-title">vite.config.ts</span>
               </div>
               <div class="window-body">
-                <pre class="window-code"><code><span class="tok-kw">import</span> { defineConfig } <span class="tok-kw">from</span> <span class="tok-str">"vite"</span>;
+                <pre
+                  class="window-code"
+                ><code><span class="tok-kw">import</span> { defineConfig } <span class="tok-kw">from</span> <span class="tok-str">"vite"</span>;
 <span class="tok-kw">import</span> samhail <span class="tok-kw">from</span> <span class="tok-str">"samhail/vite"</span>;
 
 <span class="tok-kw">export default</span> <span class="tok-fn">defineConfig</span>({
@@ -190,11 +201,11 @@ onUnmounted(() => {
         <div class="showcase-row">
           <div class="showcase-text">
             <span class="section-label peach">Safety</span>
-            <h2>Safe when you're not using it.</h2>
+            <h2>No-op when inactive</h2>
             <p>
-              No heartbeat file? The plugin is a no-op. Your production builds
-              are never affected. Crash recovery is built in — stale heartbeats
-              are detected and ignored.
+              Without a heartbeat file, the plugin does nothing. Production
+              builds aren't affected. Stale heartbeats from crashed sessions are
+              detected and ignored.
             </p>
           </div>
           <div class="showcase-visual">
@@ -205,7 +216,9 @@ onUnmounted(() => {
                 <span class="dot expand"></span>
               </div>
               <div class="window-body">
-                <pre class="window-code"><code><span class="tok-prompt">$</span> samhail status
+                <pre
+                  class="window-code"
+                ><code><span class="tok-prompt">$</span> samhail status
 
   Session: <span class="tok-dim">not running</span>
 
@@ -248,12 +261,42 @@ onUnmounted(() => {
     <!-- ───────── CTA ───────── -->
     <section class="cta-section">
       <div class="section-inner cta-inner">
-        <h2 class="cta-heading">Start developing locally.</h2>
-        <button class="cta-command" :class="{ copied }" @click="copyCommand" title="Copy to clipboard">
+        <h2 class="cta-heading">Get started</h2>
+        <button
+          class="cta-command"
+          :class="{ copied }"
+          @click="copyCommand"
+          title="Copy to clipboard"
+        >
           <code>npx samhail link</code>
           <span class="copy-icon">
-            <svg v-if="!copied" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg
+              v-if="!copied"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+              <path
+                d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+              />
+            </svg>
+            <svg
+              v-else
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
           </span>
         </button>
         <a
@@ -466,7 +509,7 @@ onUnmounted(() => {
     0 0 0 1px var(--vp-c-divider);
 }
 
-/* Terminal variant — always dark chrome */
+/* Terminal variant - always dark chrome */
 .window-frame.terminal {
   background: #0d0d10;
   border-color: #1e1e22;
@@ -640,11 +683,7 @@ onUnmounted(() => {
 }
 
 .step:nth-child(3) .step-num {
-  background: linear-gradient(
-    135deg,
-    var(--vp-c-brand-1) 40%,
-    var(--c-peach)
-  );
+  background: linear-gradient(135deg, var(--vp-c-brand-1) 40%, var(--c-peach));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
