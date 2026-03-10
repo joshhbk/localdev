@@ -1,3 +1,4 @@
 import { unplugin } from "./core.js";
 
 export const samhail = unplugin.vite;
+export default samhail;

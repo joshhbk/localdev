@@ -23,5 +23,13 @@ export default defineConfig([
     outDir: "dist/plugin",
     dts: true,
     clean: false,
+    footer({ format }) {
+      if (format === "cjs") {
+        return {
+          js: "module.exports = module.exports.default ?? module.exports;",
+        };
+      }
+      return {};
+    },
   },
 ]);
