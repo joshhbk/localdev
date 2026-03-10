@@ -1,7 +1,7 @@
 {
   "name": "samhail",
   "version": "0.1.0",
-  "description": "Zero-choreography local npm package development across repos",
+  "description": "Develop local npm packages against consumer apps at the bundler level",
   "type": "module",
   "bin": {
     "samhail": "./dist/cli/index.js"
@@ -79,5 +79,10 @@
     "esbuild",
     "rollup"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshhbk/samhail.git"
+  },
+  "homepage": "https://github.com/joshhbk/samhail#readme"
 }
