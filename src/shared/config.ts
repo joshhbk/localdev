@@ -8,8 +8,7 @@ function isSamhailLink(link: unknown): boolean {
   return (
     typeof link === "object" &&
     link !== null &&
-    typeof (link as Record<string, unknown>).path === "string" &&
-    typeof (link as Record<string, unknown>).dev === "string"
+    typeof (link as Record<string, unknown>).path === "string"
   );
 }
 

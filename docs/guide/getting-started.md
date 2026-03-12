@@ -63,16 +63,18 @@ export default {
 npx samhail link
 ```
 
-This walks you through picking a dependency from your `package.json`, pointing it at a local directory, and choosing a dev command. samhail looks for matching packages in sibling and nearby directories, so you usually won't need to type a path manually.
+This walks you through picking a dependency from your `package.json` and pointing it at a local directory. samhail looks for matching packages in sibling and nearby directories, so you usually won't need to type a path manually.
 
 The result is a `.samhail.json` file in your project root. Add it and `.samhail.lock` to your `.gitignore`.
 
-## Start
+## Start a session
 
 ```bash
 npx samhail start
 ```
 
-This spawns the dev command for each linked package. While it's running, the bundler plugin resolves those packages from their local directories instead of `node_modules`.
+This activates the session and writes a heartbeat file. While it's running, the bundler plugin resolves linked packages from their local directories instead of `node_modules`.
+
+Run your package build/watch commands separately in other terminals or via your task runner.
 
 `Ctrl+C` to stop. The heartbeat file is cleaned up and the plugin goes back to normal behavior.

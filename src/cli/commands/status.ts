@@ -52,14 +52,14 @@ export const statusCommand = defineSamhailCommand({
     }
 
     for (const [name, link] of entries) {
-      let pathLine = `Path:     ${link.path}`;
+      let pathLine = link.path;
       try {
         await access(link.path);
       } catch {
         pathLine += "  \u26A0 directory not found";
       }
 
-      p.log.message([name, pathLine, `Command:  ${link.dev}`].join("\n"));
+      p.log.message(`${name} → ${pathLine}`);
     }
 
     const count = entries.length;

@@ -6,7 +6,6 @@ interface PackageJson {
   name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
-  scripts?: Record<string, string>;
 }
 
 function isPackageJson(value: unknown): value is PackageJson {
@@ -89,13 +88,6 @@ export async function discoverLocalPackage(
   }
 
   return matches;
-}
-
-export async function readPackageScripts(
-  packageDir: string,
-): Promise<Record<string, string>> {
-  const pkg = await readPackageJson(packageDir);
-  return pkg?.scripts ?? {};
 }
 
 export async function validateLinkedPackage(

@@ -10,7 +10,9 @@ When you maintain an npm package used by another project, you often need to iter
 
 There are two parts:
 
-1. A **CLI** that spawns dev watchers for linked packages and maintains a heartbeat file so the plugin knows a session is active.
+1. A **CLI** that manages config and maintains a heartbeat file so the plugin knows a session is active.
 2. A **bundler plugin** that reads the config, checks the heartbeat, and rewrites module resolution for linked packages.
 
-When the CLI is running, linked packages resolve from their local directories. When it's not, the plugin is inactive and builds behave normally.
+When the CLI session is running, linked packages resolve from their local directories. When it's not, the plugin is inactive and builds behave normally.
+
+You run your package build commands separately—samhail just handles the wiring.

@@ -4,7 +4,7 @@ All commands run via `npx samhail <command>`.
 
 ## `link`
 
-Interactive setup for linking a local package. Prompts you to pick a dependency, choose a local path, and select a dev command. Writes the result to `.samhail.json` and saves it to history.
+Interactive setup for linking a local package. Prompts you to pick a dependency and choose a local path. Writes the result to `.samhail.json` and saves it to history.
 
 samhail looks for matching packages in sibling directories and one level deeper, so for most project layouts you'll be selecting from a list rather than typing a path.
 
@@ -18,15 +18,17 @@ Restores packages from history. Checks that directories still exist and package 
 
 ## `start`
 
-Spawns each linked package's dev command and writes a `.samhail.lock` heartbeat file, refreshed every 5 seconds. The bundler plugin checks this file to decide whether to activate.
+Activates a session and writes a `.samhail.lock` heartbeat file, refreshed every 5 seconds. The bundler plugin checks this file to decide whether to resolve linked packages.
 
 One session per project. If a stale lock file exists from a previous crashed session, it's cleaned up automatically.
 
-Runs until `Ctrl+C`. On shutdown, watchers are terminated and the lock file is removed.
+Runs until `Ctrl+C`. On shutdown, the lock file is removed.
+
+Run your package build/watch commands separately—samhail just maintains the session state.
 
 ## `status`
 
-Shows whether a session is running (with PID and uptime) and lists all linked packages with their paths and dev commands. Flags any missing directories.
+Shows whether a session is running (with PID and uptime) and lists all linked packages with their paths. Flags any missing directories.
 
 ## `tsconfig`
 

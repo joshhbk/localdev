@@ -26,7 +26,7 @@ describe("start helpers", () => {
   function makePackageSpec(
     name: string,
     packageDir: string,
-    link: SamhailLink = { path: "../pkg", dev: "npm run dev" },
+    link: SamhailLink = { path: "../pkg" },
   ): LinkedPackageSpec {
     return { name, link, packageDir };
   }

@@ -8,14 +8,12 @@ Created by `samhail link`. The bundler plugin reads this to know what to resolve
 {
   "links": {
     "@myorg/shared": {
-      "path": "../shared",
-      "dev": "tsup --watch"
+      "path": "../shared"
     }
   },
   "history": {
     "@myorg/utils": {
-      "path": "../utils",
-      "dev": "tsc --watch"
+      "path": "../utils"
     }
   }
 }
@@ -25,10 +23,9 @@ Created by `samhail link`. The bundler plugin reads this to know what to resolve
 
 Active linked packages. Keys are npm package names.
 
-| Field  | Type     | Description                              |
-| ------ | -------- | ---------------------------------------- |
-| `path` | `string` | Path to the local package directory      |
-| `dev`  | `string` | Command to run for watching / rebuilding |
+| Field  | Type     | Description                         |
+| ------ | -------- | ----------------------------------- |
+| `path` | `string` | Path to the local package directory |
 
 Paths can be relative or absolute. Relative paths resolve from the project root.
 

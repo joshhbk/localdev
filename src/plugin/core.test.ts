@@ -110,7 +110,6 @@ describe("unplugin resolveId", () => {
         links: {
           "@test/exports-conditional": {
             path: join(FIXTURES, "pkg-exports-conditional"),
-            dev: "echo",
           },
         },
       },
@@ -128,7 +127,6 @@ describe("unplugin resolveId", () => {
         links: {
           "@test/exports-conditional": {
             path: join(FIXTURES, "pkg-exports-conditional"),
-            dev: "echo",
           },
         },
       },
@@ -155,7 +153,6 @@ describe("unplugin resolveId", () => {
       links: {
         "@test/multi-root": {
           path: "linked",
-          dev: "echo",
         },
       },
     });

@@ -24,6 +24,10 @@ Subpath exports are supported. `@myorg/shared/utils` resolves through the packag
 
 ## Why the heartbeat
 
-The heartbeat solves a specific problem: if `samhail start` crashes, the config file still points at local directories, but nothing is rebuilding them. Without a liveness check, the bundler would silently resolve stale files.
+The heartbeat solves a specific problem: if `samhail start` crashes or you forget to stop it, the config file still points at local directories. Without a liveness check, the bundler would silently resolve potentially stale files.
 
 The lock file is written on start and refreshed every 5 seconds. The plugin checks both the timestamp and whether the process is still alive. If either check fails, resolution falls back to `node_modules`.
+
+## Build commands
+
+samhail doesn't run your package build commands—you do that yourself, however you prefer (separate terminal, task runner, nx, turbo, etc). samhail just handles the wiring: making sure your bundler resolves imports to the right place when a session is active.

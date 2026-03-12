@@ -28,26 +28,26 @@ describe("config", () => {
     it("reads config with history", async () => {
       const dir = await makeTempDir();
       await writeConfig(dir, {
-        links: { "@acme/ui": { path: "../ui", dev: "tsc --watch" } },
-        history: { "@acme/core": { path: "../core", dev: "bun dev" } },
+        links: { "@acme/ui": { path: "../ui" } },
+        history: { "@acme/core": { path: "../core" } },
       });
 
       const config = await readConfig(dir);
       expect(config).toEqual({
-        links: { "@acme/ui": { path: "../ui", dev: "tsc --watch" } },
-        history: { "@acme/core": { path: "../core", dev: "bun dev" } },
+        links: { "@acme/ui": { path: "../ui" } },
+        history: { "@acme/core": { path: "../core" } },
       });
     });
 
     it("reads config without history (regression)", async () => {
       const dir = await makeTempDir();
       await writeConfig(dir, {
-        links: { "@acme/ui": { path: "../ui", dev: "tsc --watch" } },
+        links: { "@acme/ui": { path: "../ui" } },
       });
 
       const config = await readConfig(dir);
       expect(config).toEqual({
-        links: { "@acme/ui": { path: "../ui", dev: "tsc --watch" } },
+        links: { "@acme/ui": { path: "../ui" } },
       });
     });
 
@@ -66,21 +66,6 @@ describe("config", () => {
       expect(config).toBeNull();
     });
 
-    it("rejects history with missing dev field", async () => {
-      const dir = await makeTempDir();
-      const { writeFile } = await import("node:fs/promises");
-      await writeFile(
-        join(dir, ".samhail.json"),
-        JSON.stringify({
-          links: {},
-          history: { pkg: { path: "../pkg" } },
-        }),
-      );
-
-      const config = await readConfig(dir);
-      expect(config).toBeNull();
-    });
-
     it("returns null for missing config file", async () => {
       const dir = await makeTempDir();
       const config = await readConfig(dir);
@@ -92,10 +77,10 @@ describe("config", () => {
     it("preserves history through write and read", async () => {
       const dir = await makeTempDir();
       const original = {
-        links: { "@acme/ui": { path: "../ui", dev: "tsc --watch" } },
+        links: { "@acme/ui": { path: "../ui" } },
         history: {
-          "@acme/core": { path: "../core", dev: "bun dev" },
-          "@acme/utils": { path: "../utils", dev: "npm run build:watch" },
+          "@acme/core": { path: "../core" },
+          "@acme/utils": { path: "../utils" },
         },
       };
 
@@ -108,7 +93,7 @@ describe("config", () => {
       const dir = await makeTempDir();
       await writeConfig(dir, {
         links: {},
-        history: { pkg: { path: "../pkg", dev: "dev" } },
+        history: { pkg: { path: "../pkg" } },
       });
 
       const raw = await readFile(join(dir, ".samhail.json"), "utf-8");

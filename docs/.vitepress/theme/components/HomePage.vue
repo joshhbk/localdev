@@ -44,10 +44,7 @@ onUnmounted(() => {
       <div class="hero-inner">
         <div class="hero-text">
           <span class="hero-badge">npm package development</span>
-          <h1 class="hero-title">
-            <span>Develop packages</span>
-            <span class="accent">locally.</span>
-          </h1>
+          <h1 class="hero-title">Develop packages locally</h1>
           <p class="hero-tagline">
             Link local npm packages to consumer apps at the bundler level,
             without symlinks, monorepos, or lockfile changes.
@@ -80,13 +77,11 @@ onUnmounted(() => {
                 class="window-code"
               ><code><span class="tok-prompt">$</span> samhail start
 
-  Starting watcher: <span class="tok-pkg">@depot/ui</span> → tsc --watch
-  Starting watcher: <span class="tok-pkg">@depot/core</span> → bun dev
+  <span class="tok-pkg">@depot/ui</span> → ../ui
+  <span class="tok-pkg">@depot/core</span> → ../core
 
-  <span class="tok-dim">[</span><span class="tok-pkg">@depot/ui</span><span class="tok-dim">]</span> watching for changes...
-  <span class="tok-dim">[</span><span class="tok-pkg">@depot/core</span><span class="tok-dim">]</span> built successfully
-
-  <span class="tok-ok">Watching 2 packages.</span> Press Ctrl+C to stop.</code></pre>
+  <span class="tok-ok">Session active for 2 packages.</span>
+  Run your dev commands separately. Press Ctrl+C to stop.</code></pre>
             </div>
           </div>
         </div>
@@ -111,8 +106,8 @@ onUnmounted(() => {
             <span class="step-num">02</span>
             <h3 class="step-title">Start</h3>
             <p class="step-desc">
-              Run <code>samhail start</code> to spawn watchers and write a
-              heartbeat file.
+              Run <code>samhail start</code> to activate the session. Run your
+              build commands however you like.
             </p>
           </div>
           <div class="step-connector" aria-hidden="true"><span></span></div>
@@ -153,12 +148,10 @@ onUnmounted(() => {
                 <pre class="window-code"><code>{
   <span class="tok-key">"links"</span>: {
     <span class="tok-key">"@depot/ui"</span>: {
-      <span class="tok-key">"path"</span>: <span class="tok-str">"../ui"</span>,
-      <span class="tok-key">"dev"</span>: <span class="tok-str">"tsc --watch"</span>
+      <span class="tok-key">"path"</span>: <span class="tok-str">"../ui"</span>
     },
     <span class="tok-key">"@depot/core"</span>: {
-      <span class="tok-key">"path"</span>: <span class="tok-str">"../core"</span>,
-      <span class="tok-key">"dev"</span>: <span class="tok-str">"bun dev"</span>
+      <span class="tok-key">"path"</span>: <span class="tok-str">"../core"</span>
     }
   }
 }</code></pre>
@@ -222,9 +215,7 @@ onUnmounted(() => {
 
   Session: <span class="tok-dim">not running</span>
 
-  <span class="tok-pkg">@depot/ui</span>
-  Path:    ../ui
-  Command: tsc --watch
+  <span class="tok-pkg">@depot/ui</span> → ../ui
 
   <span class="tok-dim">1 package linked</span></code></pre>
               </div>
@@ -413,21 +404,6 @@ onUnmounted(() => {
   letter-spacing: -0.04em;
   margin: 0 0 1.5rem;
   animation: fadeUp 0.6s ease 0.08s both;
-}
-
-.hero-title span {
-  display: block;
-}
-
-.hero-title .accent {
-  background: linear-gradient(
-    135deg,
-    var(--vp-c-brand-1) 30%,
-    var(--c-peach) 100%
-  );
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .hero-tagline {

@@ -5,7 +5,6 @@ import { cancelGuard, defineSamhailCommand } from "../command.js";
 import {
   discoverLocalPackage,
   readConsumerDeps,
-  readPackageScripts,
   validateLinkedPackage,
 } from "./link-helpers.js";
 
@@ -115,57 +114,9 @@ export const linkCommand = defineSamhailCommand({
 
     const relativePath = relative(cwd, selectedPath);
 
-    // Step 4 — Pick dev command
-    const scripts = await readPackageScripts(selectedPath);
-    const scriptEntries = Object.entries(scripts);
-    let devCommand: string;
-
-    const customOption = "__custom__";
-    if (scriptEntries.length > 0) {
-      const scriptChoice = cancelGuard(
-        await p.select({
-          message: "Which script should run for local development?",
-          options: [
-            ...scriptEntries.map(([name, cmd]) => ({
-              value: cmd,
-              label: name,
-              hint: cmd,
-            })),
-            { value: customOption, label: "Custom command..." },
-          ],
-        }),
-      );
-
-      if (scriptChoice === customOption) {
-        devCommand = cancelGuard(
-          await p.text({
-            message: "Enter the dev command:",
-            validate: (input = "") => {
-              if (!input.trim()) return "Command is required.";
-              return undefined;
-            },
-          }),
-        );
-      } else {
-        devCommand = scriptChoice;
-      }
-    } else {
-      p.log.warn(`No scripts found in ${selectedDep}'s package.json.`);
-      devCommand = cancelGuard(
-        await p.text({
-          message: "Enter the dev command:",
-          validate: (input = "") => {
-            if (!input.trim()) return "Command is required.";
-            return undefined;
-          },
-        }),
-      );
-    }
-
-    // Step 5 — Confirm & write
+    // Step 4 — Confirm & write
     p.log.step(`Package:  ${selectedDep}`);
     p.log.step(`Path:     ${relativePath}`);
-    p.log.step(`Command:  ${devCommand}`);
 
     const confirmed = cancelGuard(
       await p.confirm({ message: "Write this link to .samhail.json?" }),
@@ -175,7 +126,7 @@ export const linkCommand = defineSamhailCommand({
       return { status: "cancelled" };
     }
 
-    const linkEntry = { path: relativePath, dev: devCommand };
+    const linkEntry = { path: relativePath };
     const config = {
       links: {
         ...existingConfig?.links,

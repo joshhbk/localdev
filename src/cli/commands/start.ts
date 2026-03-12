@@ -3,11 +3,6 @@ import { removeHeartbeat, writeHeartbeat } from "../../shared/heartbeat.js";
 import type { HeartbeatManifest } from "../../shared/types.js";
 import { defineSamhailCommand } from "../command.js";
 import {
-  killAllWatchers,
-  spawnWatcher,
-  type WatcherProcess,
-} from "../watcher.js";
-import {
   findMissingLinkedPackage,
   getLinkedPackageSpecs,
   getStartSessionState,
@@ -16,7 +11,7 @@ import {
 export const startCommand = defineSamhailCommand({
   meta: {
     name: "start",
-    description: "Start dev watchers for all linked packages",
+    description: "Start a samhail session for linked packages",
   },
   async run() {
     const cwd = process.cwd();
@@ -59,36 +54,8 @@ export const startCommand = defineSamhailCommand({
       await removeHeartbeat(cwd);
     }
 
-    // 4. Spawn watchers
-    const watchers: WatcherProcess[] = [];
-    for (const { name, link, packageDir } of linkedPackages) {
-      p.log.step(`Starting watcher: ${name} → ${link.dev}`);
-      watchers.push(
-        spawnWatcher(name, link.dev, {
-          cwd: packageDir,
-          onStdout: (data) => {
-            for (const line of data.trimEnd().split("\n")) {
-              p.log.message(`[${name}] ${line}`);
-            }
-          },
-          onStderr: (data) => {
-            for (const line of data.trimEnd().split("\n")) {
-              p.log.warn(`[${name}] ${line}`);
-            }
-          },
-          onExit: (code) => {
-            if (code !== 0) {
-              p.log.error(`[${name}] exited with code ${code}`);
-            } else {
-              p.log.message(`[${name}] exited`);
-            }
-          },
-        }),
-      );
-    }
+    // 4. Write initial heartbeat + refresh interval
     const packageNames = linkedPackages.map(({ name }) => name);
-
-    // 5. Write initial heartbeat + refresh interval
     const startedAt = new Date().toISOString();
 
     const refreshHeartbeat = async () => {
@@ -110,18 +77,20 @@ export const startCommand = defineSamhailCommand({
       }
     }, 5000);
 
-    p.log.step(
-      `Watching ${packageNames.length} package${packageNames.length === 1 ? "" : "s"}. Press Ctrl+C to stop.`,
+    for (const { name, link } of linkedPackages) {
+      p.log.step(`${name} → ${link.path}`);
+    }
+
+    p.log.message(
+      `\nSession active for ${packageNames.length} package${packageNames.length === 1 ? "" : "s"}.\nRun your dev commands separately. Press Ctrl+C to stop.`,
     );
 
-    // 6. Graceful shutdown (signal-based lifecycle, stays as process.exit)
+    // 5. Graceful shutdown
     let shuttingDown = false;
     const shutdown = async () => {
       if (shuttingDown) return;
       shuttingDown = true;
       clearInterval(heartbeatInterval);
-      p.log.step("Shutting down watchers...");
-      await killAllWatchers(watchers);
       await removeHeartbeat(cwd);
       p.outro("samhail stopped.");
       process.exit(0);

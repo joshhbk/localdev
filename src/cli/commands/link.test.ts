@@ -6,7 +6,6 @@ import {
   validateLinkedPackage,
   readConsumerDeps,
   discoverLocalPackage,
-  readPackageScripts,
 } from "./link-helpers.js";
 
 describe("link helpers", () => {
@@ -118,31 +117,6 @@ describe("link helpers", () => {
 
       const results = await discoverLocalPackage("@acme/ui", consumer);
       expect(results).toEqual([]);
-    });
-  });
-
-  describe("readPackageScripts", () => {
-    it("returns scripts object", async () => {
-      const dir = await makeTempDir();
-      await writeFile(
-        join(dir, "package.json"),
-        JSON.stringify({
-          name: "pkg",
-          scripts: { dev: "tsc --watch", build: "tsc" },
-        }),
-      );
-      const scripts = await readPackageScripts(dir);
-      expect(scripts).toEqual({ dev: "tsc --watch", build: "tsc" });
-    });
-
-    it("returns empty object when no scripts field", async () => {
-      const dir = await makeTempDir();
-      await writeFile(
-        join(dir, "package.json"),
-        JSON.stringify({ name: "pkg" }),
-      );
-      const scripts = await readPackageScripts(dir);
-      expect(scripts).toEqual({});
     });
   });
 
