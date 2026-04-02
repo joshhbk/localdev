@@ -130,9 +130,7 @@ export const unplugin = createUnplugin((options?: SamhailPluginOptions) => {
     enforce: "pre",
 
     async buildStart() {
-      if (inlineConfig) {
-        rawConfig = inlineConfig;
-      } else {
+      if (!inlineConfig) {
         rawConfig = await readConfig(cwd);
         if (typeof this.addWatchFile === "function") {
           this.addWatchFile(getConfigPath(cwd));
